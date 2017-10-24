@@ -5,10 +5,7 @@ from argparse import ArgumentParser, FileType
 from collections import defaultdict
 from graphviz import Digraph
 
-def make_graph(database, graph, view):
-    with open('internal.vars') as internal:
-        internal = internal.readlines()
-
+def relations(database, blacklist):
     assignments = defaultdict(set)
 
     re_assignment = re.compile('^(\w+) :?= .*$')
@@ -22,21 +19,29 @@ def make_graph(database, graph, view):
             continue
 
         assignee = match_assignee.group(1)
-        if assignee in internal:
+        if assignee in blacklist:
             continue
 
         for match_variable in re.finditer(re_variable, line):
-            assignments[assignee].add(match_variable.group(1))
+            variable = match_variable.group(1)
+            if variable not in blacklist:
+                assignments[assignee].add(variable)
+
+    return assignments
+
+def make_graph(database, graph, view):
+    with open('internal.vars') as internal:
+        internal = internal.readlines()
+
+    assignments = relations(database, internal)
+
+    nodes = {assignee for (assignee, _) in assignments.iteritems()}
+    [nodes.update(variables) for (_, variables) in assignments.iteritems()]
 
     dot = Digraph(comment = 'GNU Make Variable Graph')
-    dot.graph_attr['ratio'] = '0.15'
-    for (assignee, variables) in assignments.iteritems():
-        if assignee in internal:
-            continue
-
-        dot.node(assignee)
-        [dot.node(var) for var in variables if var not in internal]
-        [dot.edge(assignee, var) for var in variables if var not in internal]
+    [dot.node(node) for node in nodes]
+    [dot.edge(assignee, var) for var in variables
+     for (assignee, variables) in assignments.iteritems()]
 
     dot.render(graph, view = view)
 
