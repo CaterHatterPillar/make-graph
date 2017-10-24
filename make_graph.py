@@ -41,7 +41,7 @@ def make_graph(database, graph, view):
     dot.render(graph, view = view)
 
 if __name__ == "__main__":
-    parser = ArgumentParser("make_graph.py")
+    parser = ArgumentParser('make_graph.py')
     parser.add_argument('--database', type = FileType('r'),
                         help = ("GNU Make database filename; if no filename is"
                                 " provided the database is expected on the"
