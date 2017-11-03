@@ -1,4 +1,5 @@
 import re
+import subprocess
 import sys
 
 from argparse import ArgumentParser, FileType
@@ -24,10 +25,12 @@ def relations(database):
 
     return assignments
 
-def trim(assignments, include_single):
-    if include_single:
-        return assignments
+echo_internal_variables = """
+echo:
+	@echo $(subst <,\<,$(.VARIABLES))
+"""  # on my system, <D is the first variable
 
+def without_edges(assignments):
     # not assigned other variables
     singles = {assignee for (assignee, variables) in
                assignments.iteritems() if len(variables) == 0}
@@ -35,12 +38,26 @@ def trim(assignments, include_single):
     [singles.difference_update(variables) for (_, variables) in
      assignments.iteritems()]
 
-    [assignments.pop(single, None) for single in singles]
+    return singles
 
+def internal_variables():
+    # Alternatively acquire using with make --print-data-base -f /dev/null
+    variables = subprocess.check_output(
+        ['make', '--eval', echo_internal_variables])
+    return set(variables.split())
+
+def trim(assignments, include_internal, include_single):
+    exclude = set()
+    if not include_internal:
+        exclude.update(internal_variables())
+    if not include_single:
+        exlude.update(without_edges(assignments))
+
+    [assignments.pop(variable, None) for variable in exclude]
     return assignments
 
-def make_graph(database, graph, include_single, view):
-    assignments = trim(relations(database), include_single)
+def make_graph(database, graph, include_internal, include_single, view):
+    assignments = trim(relations(database), include_internal, include_single)
 
     nodes = {assignee for (assignee, _) in assignments.iteritems()}
     [nodes.update(variables) for (_, variables) in assignments.iteritems()]
@@ -60,6 +77,8 @@ if __name__ == "__main__":
                                 " standard input stream"))
     parser.add_argument('--graph', default = 'graph',
                         help = ("Graph name; defaults to 'graph'"))
+    parser.add_argument('--include-internal', action = 'store_true',
+                        help = "Include internal and implicit variables")
     parser.add_argument('--include-single', action = 'store_true',
                         help = "Include nodes without edges")
     parser.add_argument('--no-view', dest = 'view', action = 'store_false',
@@ -67,7 +86,8 @@ if __name__ == "__main__":
 
     args = vars(parser.parse_args())
     database = args['database'] if args['database'] else sys.stdin
-    make_graph(database, args['graph'], args['include_single'], args['view'])
+    make_graph(database, args['graph'], args['include_internal'],
+               args['include_single'], args['view'])
 
     if database != sys.stdin:
         database.close()
