@@ -2,11 +2,10 @@ import re
 import sys
 
 from argparse import ArgumentParser, FileType
-from collections import defaultdict
 from graphviz import Digraph
 
 def relations(database):
-    assignments = defaultdict(set)
+    assignments = {}
 
     re_assignment = re.compile('^(\w+) :?= .*$')
     re_variable = re.compile('\$\((\w+)\)')
@@ -19,6 +18,7 @@ def relations(database):
             continue
 
         assignee = match_assignee.group(1)
+        assignments.setdefault(assignee, set())
         for match_variable in re.finditer(re_variable, line):
             assignments[assignee].add(match_variable.group(1))
 
@@ -32,8 +32,8 @@ def make_graph(database, graph, view):
 
     dot = Digraph(comment = 'GNU Make Variable Graph')
     [dot.node(node) for node in nodes]
-    [dot.edge(assignee, var) for var in variables
-     for (assignee, variables) in assignments.iteritems()]
+    [dot.edge(assignee, var) for (assignee, variables) in
+     assignments.iteritems() for var in variables]
 
     dot.render(graph, view = view)
 
@@ -45,8 +45,8 @@ if __name__ == "__main__":
                                 " standard input stream"))
     parser.add_argument('--graph', default = 'graph',
                         help = ("Graph name; defaults to 'graph'"))
-    parser.add_argument('--no-view', dest = 'view', action = 'store_false',
-                        help = "Don't open the assembled graph")
+    parser.add_argument('--include-single', action = 'store_true',
+                        help = "Include lone nodes")
 
     args = vars(parser.parse_args())
     database = args['database'] if args['database'] else sys.stdin
