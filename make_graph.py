@@ -8,8 +8,8 @@ from graphviz import Digraph
 def relations(database):
     assignments = {}
 
-    re_assignment = re.compile('^(\w+) :?= .*$')
-    re_variable = re.compile('\$\((\w+)\)')
+    re_assignment = re.compile('^([^:\#= ]+) :?= .*$')
+    re_variable = re.compile('\$\(([^:\#= ]+)\)')
     for line in database:
         if not any(assign in line for assign in (' = ', ' := ')):
             continue
