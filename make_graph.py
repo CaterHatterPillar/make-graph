@@ -35,8 +35,8 @@ def without_edges(assignments):
     singles = {assignee for (assignee, variables) in
                assignments.iteritems() if len(variables) == 0}
     # and not assigned to another variables
-    [singles.difference_update(variables) for (_, variables) in
-     assignments.iteritems()]
+    for (_, variables) in assignments.iteritems():
+        singles.difference_update(variables)
 
     return singles
 
@@ -53,24 +53,35 @@ def trim(assignments, include_internal, include_single):
     if not include_single:
         exlude.update(without_edges(assignments))
 
-    [assignments.pop(variable, None) for variable in exclude]
+    for var in exclude:
+        assignments.pop(var, None)
     return assignments
+
+def nodes(assignments):
+    nodes = {assignee for (assignee, _) in assignments.iteritems()}
+    for (_, variables) in assignments.iteritems():
+        nodes.update(variables)
+    return nodes
+
+def render(assignments, name, view):
+    dot = Digraph(comment = 'GNU Make Variable Graph')
+
+    for node in nodes(assignments):
+        dot.node(node)
+
+    vars = [v for (_, variables) in assignments.iteritems() for v in variables]
+    for var in vars:
+        dot.edge(assignee, var)
+
+    dot.render(name, view = view)
 
 def make_graph(database, graph, include_internal, include_single, list, view):
     assignments = trim(relations(database), include_internal, include_single)
 
-    nodes = {assignee for (assignee, _) in assignments.iteritems()}
-    [nodes.update(variables) for (_, variables) in assignments.iteritems()]
-
     if list:
-        sys.stdout.write('\n'.join(nodes))
+        sys.stdout.write('\n'.join(nodes(assignments)))
     else:
-        dot = Digraph(comment = 'GNU Make Variable Graph')
-        [dot.node(node) for node in nodes]
-        [dot.edge(assignee, var) for (assignee, variables) in
-         assignments.iteritems() for var in variables]
-
-        dot.render(graph, view = view)
+        render(assignments, graph, view)
 
 if __name__ == "__main__":
     parser = ArgumentParser(__file__)
