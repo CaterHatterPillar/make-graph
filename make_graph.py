@@ -56,18 +56,21 @@ def trim(assignments, include_internal, include_single):
     [assignments.pop(variable, None) for variable in exclude]
     return assignments
 
-def make_graph(database, graph, include_internal, include_single, view):
+def make_graph(database, graph, include_internal, include_single, list, view):
     assignments = trim(relations(database), include_internal, include_single)
 
     nodes = {assignee for (assignee, _) in assignments.iteritems()}
     [nodes.update(variables) for (_, variables) in assignments.iteritems()]
 
-    dot = Digraph(comment = 'GNU Make Variable Graph')
-    [dot.node(node) for node in nodes]
-    [dot.edge(assignee, var) for (assignee, variables) in
-     assignments.iteritems() for var in variables]
+    if list:
+        sys.stdout.write('\n'.join(nodes))
+    else:
+        dot = Digraph(comment = 'GNU Make Variable Graph')
+        [dot.node(node) for node in nodes]
+        [dot.edge(assignee, var) for (assignee, variables) in
+         assignments.iteritems() for var in variables]
 
-    dot.render(graph, view = view)
+        dot.render(graph, view = view)
 
 if __name__ == "__main__":
     parser = ArgumentParser(__file__)
@@ -81,13 +84,18 @@ if __name__ == "__main__":
                         help = "Include internal and implicit variables")
     parser.add_argument('--include-single', action = 'store_true',
                         help = "Include nodes without edges")
+    parser.add_argument('--list', action = 'store_true')
     parser.add_argument('--no-view', dest = 'view', action = 'store_false',
                         help = "Don't open the assembled graph")
 
     args = vars(parser.parse_args())
     database = args['database'] if args['database'] else sys.stdin
-    make_graph(database, args['graph'], args['include_internal'],
-               args['include_single'], args['view'])
+    make_graph(database,
+               args['graph'],
+               args['include_internal'] or args['list'],
+               args['include_single'] or args['list'],
+               args['list'],
+               args['view'])
 
     if database != sys.stdin:
         database.close()
