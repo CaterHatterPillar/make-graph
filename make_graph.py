@@ -51,7 +51,7 @@ def trim(assignments, include_internal, include_single):
     if not include_internal:
         exclude.update(internal_variables())
     if not include_single:
-        exlude.update(without_edges(assignments))
+        exclude.update(without_edges(assignments))
 
     for var in exclude:
         assignments.pop(var, None)
