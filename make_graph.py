@@ -7,7 +7,8 @@ import sys
 def relations(database):
     assignments = {}
 
-    re_assignment = re.compile(r'^([^:#= ]+) :?= .*$')
+    # accept target-specific variables
+    re_assignment = re.compile(r'.*?([^:#= ]+) :?= .*$')
     re_variable = re.compile(r'\$\(([^:#= ]+)\)')
     for line in database:
         if not any(assign in line for assign in (' = ', ' := ')):
