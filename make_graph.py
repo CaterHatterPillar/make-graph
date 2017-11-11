@@ -1,15 +1,14 @@
+import argparse
+import graphviz
 import re
 import subprocess
 import sys
 
-from argparse import ArgumentParser, FileType
-from graphviz import Digraph
-
 def relations(database):
     assignments = {}
 
-    re_assignment = re.compile('^([^:\#= ]+) :?= .*$')
-    re_variable = re.compile('\$\(([^:\#= ]+)\)')
+    re_assignment = re.compile(r'^([^:#= ]+) :?= .*$')
+    re_variable = re.compile(r'\$\(([^:#= ]+)\)')
     for line in database:
         if not any(assign in line for assign in (' = ', ' := ')):
             continue
@@ -35,9 +34,9 @@ def without_edges(assignments):
 
     return singles
 
-def exclude_no_edges(assignments):
-    for var in set(without_edges(assignments)):
-        assignments.pop(var, None)
+def trim_singles(assignments):
+    for variable in set(without_edges(assignments)):
+        assignments.pop(variable, None)
     return assignments
 
 def nodes(assignments):
@@ -46,33 +45,37 @@ def nodes(assignments):
         nodes.update(variables)
     return nodes
 
-def render(assignments, name, view):
-    dot = Digraph(comment = 'GNU Make Variable Graph')
-
-    for node in nodes(assignments):
+def add_nodes(dot, nodes):
+    for node in nodes:
         dot.node(node)
 
-    vars = [v for (_, variables) in assignments.iteritems() for v in variables]
-    for var in vars:
-        dot.edge(assignee, var)
+def add_edges(dot, assignments):
+    for (assignee, variables) in assignments.iteritems():
+        for variable in variables:
+            dot.edge(assignee, variable)
 
-    dot.render(name, view = view)
+def output_graph(assignments, graph_name, view):
+    dot = graphviz.Digraph(comment = 'GNU Make Variable Directional Graph')
 
-def output(assignments):
+    add_nodes(dot, nodes(assignments))
+    add_edges(dot, assignments)
+
+    dot.render(graph_name, view = view)
+
+def output_text(assignments):
     for (assignee, variables) in sorted(assignments.iteritems()):
         sys.stdout.write('%s = %s\n' % (assignee, ' '.join(sorted(variables))))
 
 def make_graph(database, graph_name, as_text, view):
-    assignments = exclude_no_edges(relations(database))
-
+    assignments = trim_singles(relations(database))
     if as_text:
-        output(assignments)
+        output_text(assignments)
     else:
-        render(assignments, graph, view)
+        output_graph(assignments, graph_name, view)
 
 if __name__ == "__main__":
-    parser = ArgumentParser(__file__)
-    parser.add_argument('--database', type = FileType('r'),
+    parser = argparse.ArgumentParser(__file__)
+    parser.add_argument('--database', type = argparse.FileType('r'),
                         help = ("GNU Make database filename; if no filename is"
                                 " provided the database is expected on the"
                                 " standard input stream"))
