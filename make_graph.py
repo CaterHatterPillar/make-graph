@@ -62,10 +62,10 @@ def output(assignments):
     for (assignee, variables) in sorted(assignments.iteritems()):
         sys.stdout.write('%s = %s\n' % (assignee, ' '.join(sorted(variables))))
 
-def make_graph(database, graph, list, view):
+def make_graph(database, graph_name, as_text, view):
     assignments = exclude_no_edges(relations(database))
 
-    if list:
+    if as_text:
         output(assignments)
     else:
         render(assignments, graph, view)
@@ -76,15 +76,16 @@ if __name__ == "__main__":
                         help = ("GNU Make database filename; if no filename is"
                                 " provided the database is expected on the"
                                 " standard input stream"))
-    parser.add_argument('--graph', default = 'graph',
+    parser.add_argument('--graph-name', default = 'graph', dest = 'graph_name',
                         help = ("Graph name; defaults to 'graph'"))
-    parser.add_argument('--list', action = 'store_true')
+    parser.add_argument('--list', dest = 'as_text', action = 'store_true',
+                        help = "Output as text to the standard output stream")
     parser.add_argument('--no-view', dest = 'view', action = 'store_false',
                         help = "Don't open the assembled graph")
 
     args = vars(parser.parse_args())
     database = args['database'] if args['database'] else sys.stdin
-    make_graph(database, args['graph'], args['list'], args['view'])
+    make_graph(database, args['graph_name'], args['as_text'], args['view'])
 
     if database != sys.stdin:
         database.close()
