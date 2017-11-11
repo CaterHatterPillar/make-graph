@@ -25,11 +25,6 @@ def relations(database):
 
     return assignments
 
-echo_internal_variables = """
-echo:
-	@echo $(subst <,\<,$(.VARIABLES))
-"""  # on my system, <D is the first variable
-
 def without_edges(assignments):
     # not assigned other variables
     singles = {assignee for (assignee, variables) in
@@ -40,16 +35,8 @@ def without_edges(assignments):
 
     return singles
 
-def internal_variables():
-    # Alternatively acquire using with make --print-data-base -f /dev/null
-    variables = subprocess.check_output(
-        ['make', '--eval', echo_internal_variables])
-    return set(variables.split())
-
-def trim(assignments, include_internal, include_single):
+def trim(assignments, include_single):
     exclude = set()
-    if not include_internal:
-        exclude.update(internal_variables())
     if not include_single:
         exclude.update(without_edges(assignments))
 
@@ -79,8 +66,8 @@ def output(assignments):
     for (assignee, variables) in sorted(assignments.iteritems()):
         sys.stdout.write('%s = %s\n' % (assignee, ' '.join(sorted(variables))))
 
-def make_graph(database, graph, include_internal, include_single, list, view):
-    assignments = trim(relations(database), include_internal, include_single)
+def make_graph(database, graph, include_single, list, view):
+    assignments = trim(relations(database), include_single)
 
     if list:
         output(assignments)
@@ -95,8 +82,6 @@ if __name__ == "__main__":
                                 " standard input stream"))
     parser.add_argument('--graph', default = 'graph',
                         help = ("Graph name; defaults to 'graph'"))
-    parser.add_argument('--include-internal', action = 'store_true',
-                        help = "Include internal and implicit variables")
     parser.add_argument('--include-single', action = 'store_true',
                         help = "Include nodes without edges")
     parser.add_argument('--list', action = 'store_true')
@@ -107,7 +92,6 @@ if __name__ == "__main__":
     database = args['database'] if args['database'] else sys.stdin
     make_graph(database,
                args['graph'],
-               args['include_internal'] or args['list'],
                args['include_single'] or args['list'],
                args['list'],
                args['view'])
