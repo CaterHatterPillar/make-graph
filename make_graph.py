@@ -35,12 +35,8 @@ def without_edges(assignments):
 
     return singles
 
-def trim(assignments, include_single):
-    exclude = set()
-    if not include_single:
-        exclude.update(without_edges(assignments))
-
-    for var in exclude:
+def exclude_no_edges(assignments):
+    for var in set(without_edges(assignments)):
         assignments.pop(var, None)
     return assignments
 
@@ -66,8 +62,8 @@ def output(assignments):
     for (assignee, variables) in sorted(assignments.iteritems()):
         sys.stdout.write('%s = %s\n' % (assignee, ' '.join(sorted(variables))))
 
-def make_graph(database, graph, include_single, list, view):
-    assignments = trim(relations(database), include_single)
+def make_graph(database, graph, list, view):
+    assignments = exclude_no_edges(relations(database))
 
     if list:
         output(assignments)
@@ -82,19 +78,13 @@ if __name__ == "__main__":
                                 " standard input stream"))
     parser.add_argument('--graph', default = 'graph',
                         help = ("Graph name; defaults to 'graph'"))
-    parser.add_argument('--include-single', action = 'store_true',
-                        help = "Include nodes without edges")
     parser.add_argument('--list', action = 'store_true')
     parser.add_argument('--no-view', dest = 'view', action = 'store_false',
                         help = "Don't open the assembled graph")
 
     args = vars(parser.parse_args())
     database = args['database'] if args['database'] else sys.stdin
-    make_graph(database,
-               args['graph'],
-               args['include_single'] or args['list'],
-               args['list'],
-               args['view'])
+    make_graph(database, args['graph'], args['list'], args['view'])
 
     if database != sys.stdin:
         database.close()
