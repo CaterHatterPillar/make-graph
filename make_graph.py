@@ -75,11 +75,15 @@ def render(assignments, name, view):
 
     dot.render(name, view = view)
 
+def output(assignments):
+    for (assignee, variables) in assignments.iteritems():
+        sys.stdout.write('%s = %s\n' % (assignee, ' '.join(variables)))
+
 def make_graph(database, graph, include_internal, include_single, list, view):
     assignments = trim(relations(database), include_internal, include_single)
 
     if list:
-        sys.stdout.write('\n'.join(nodes(assignments)))
+        output(assignments)
     else:
         render(assignments, graph, view)
 
