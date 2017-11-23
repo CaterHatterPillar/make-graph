@@ -7,6 +7,11 @@ Make variables using Graphviz.
 
 `make --print-data-base | python make_graph.py [options]`
 
+## Limitations
+
+* GNU Make expand immediate variables on-sight, so series of immediate assignments are not accurately represented in the graph
+* Single letter variables in assignments are not added to the graph
+
 ## Tips
 
 * The `--print-data-base` option handles recursive Make just fine
