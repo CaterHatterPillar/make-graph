@@ -63,34 +63,6 @@ def nodes(assignments):
         nodes.update(variables)
     return nodes
 
-def add_nodes(dot, nodes):
-    for node in nodes:
-        dot.node(node)
-
-def add_edges(dot, assignments):
-    for (assignee, variables) in assignments.iteritems():
-        for variable in variables:
-            dot.edge(assignee, variable)
-
-def output_graph(assignments, graph_name, view):
-    dot = graphviz.Digraph(comment = 'GNU Make Variable Directional Graph')
-
-    add_nodes(dot, nodes(assignments))
-    add_edges(dot, assignments)
-
-    dot.render(graph_name, view = view)
-
-def output_text(assignments):
-    for (assignee, variables) in sorted(assignments.iteritems()):
-        sys.stdout.write('%s = %s\n' % (assignee, ' '.join(sorted(variables))))
-
-def make_graph(database, graph_name, as_text, include_internal, view):
-    assignments = graph_assignments(all_assignments(database), include_internal)
-    if as_text:
-        output_text(assignments)
-    else:
-        output_graph(assignments, graph_name, view)
-
 class TestAssignments(unittest.TestCase):
     # This particular edge wouldn't appear from --print-data-base
     # output, since GNU Make would expand the variable immediately
@@ -125,6 +97,34 @@ class TestAssignments(unittest.TestCase):
         self.assertEqual(nodes({'A' : set(),
                                 'B' : {'A'},
                                 'C' : set()}), {'A', 'B', 'C'})
+
+def add_nodes(dot, nodes):
+    for node in nodes:
+        dot.node(node)
+
+def add_edges(dot, assignments):
+    for (assignee, variables) in assignments.iteritems():
+        for variable in variables:
+            dot.edge(assignee, variable)
+
+def output_graph(assignments, graph_name, view):
+    dot = graphviz.Digraph(comment = 'GNU Make Variable Directional Graph')
+
+    add_nodes(dot, nodes(assignments))
+    add_edges(dot, assignments)
+
+    dot.render(graph_name, view = view)
+
+def output_text(assignments):
+    for (assignee, variables) in sorted(assignments.iteritems()):
+        sys.stdout.write('%s = %s\n' % (assignee, ' '.join(sorted(variables))))
+
+def make_graph(database, graph_name, as_text, include_internal, view):
+    assignments = graph_assignments(all_assignments(database), include_internal)
+    if as_text:
+        output_text(assignments)
+    else:
+        output_graph(assignments, graph_name, view)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(__file__)
