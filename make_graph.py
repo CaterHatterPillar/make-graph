@@ -10,7 +10,7 @@ def relations(database):
 
     # accept target-specific variables
     re_assignment = re.compile(r'.*?([^:#= ]+) :?= .*$')
-    re_variable = re.compile(r'\$\(([^:#= ]+)\)')
+    re_variable = re.compile(r'\$\(([^:#= ]+?)\)')
     for line in database:
         if not any(assign in line for assign in (' = ', ' := ')):
             continue
@@ -94,6 +94,10 @@ class TestAssignments(unittest.TestCase):
 
     def test_empty(self):
         self.assertEqual(relations('B = $(A)\n'.splitlines()), {'B' : {'A'}})
+
+    def test_multiple(self):
+        self.assertEqual(relations('A = $(B)$(C) $(D)\n'.splitlines()),
+                         {'A' : {'B', 'C', 'D'}})
 
     def test_without_edges(self):
         self.assertEqual(without_edges({'A' : set(),
