@@ -3,6 +3,7 @@ import graphviz
 import re
 import subprocess
 import sys
+import unittest
 
 def relations(database):
     assignments = {}
@@ -26,7 +27,7 @@ def relations(database):
     return assignments
 
 def without_edges(assignments):
-    # not assigned other variables
+   # not assigned other variables
     singles = {assignee for (assignee, variables) in
                assignments.iteritems() if len(variables) == 0}
     # and not assigned to another variables
@@ -73,6 +74,36 @@ def make_graph(database, graph_name, as_text, view):
         output_text(assignments)
     else:
         output_graph(assignments, graph_name, view)
+
+class TestAssignments(unittest.TestCase):
+    # This particular edge wouldn't appear from --print-data-base
+    # output, since GNU Make would expand the variable immediately
+    def test_immediate(self):
+        s = ('A := a\n'
+             'B := $(A)\n')
+        self.assertEqual(relations(s.splitlines()),
+                         {'A' : set(),
+                          'B' : {'A'}})
+
+    def test_deferred(self):
+        s = ('A = a\n'
+             'B = $(A)\n')
+        self.assertEqual(relations(s.splitlines()),
+                         {'A' : set(),
+                          'B' : {'A'}})
+
+    def test_empty(self):
+        self.assertEqual(relations('B = $(A)\n'.splitlines()), {'B' : {'A'}})
+
+    def test_without_edges(self):
+        self.assertEqual(without_edges({'A' : set(),
+                                        'B' : {'A'},
+                                        'C' : set()}), {'C'})
+
+    def test_nodes(self):
+        self.assertEqual(nodes({'A' : set(),
+                                'B' : {'A'},
+                                'C' : set()}), {'A', 'B', 'C'})
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(__file__)
