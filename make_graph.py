@@ -5,7 +5,7 @@ import subprocess
 import sys
 import unittest
 
-def relations(database):
+def all_assignments(database):
     assignments = {}
 
     # accept target-specific variables
@@ -36,10 +36,26 @@ def without_edges(assignments):
 
     return singles
 
-def trim_singles(assignments):
-    for variable in set(without_edges(assignments)):
-        assignments.pop(variable, None)
+def trim(assignments, vars_to_trim):
+    for var in vars_to_trim:
+        assignments.pop(var, None)
     return assignments
+
+# Alternatively, can be acquired using make --print-data-base -f /dev/null
+echo_internal = """
+echo:
+	@echo $(subst <,\<,$(.VARIABLES))
+"""  # on my system, <D is the first variable
+
+def internal_variables():
+    variables = subprocess.check_output(['make', '--eval', echo_internal])
+    return set(variables.split())
+
+def graph_assignments(assignments, include_internal):
+    qualifying_assignments = trim(assignments,
+                                  set(without_edges(assignments)))
+    return (qualifying_assignments if include_internal else
+            trim(qualifying_assignments, internal_variables()))
 
 def nodes(assignments):
     nodes = {assignee for (assignee, _) in assignments.iteritems()}
@@ -68,8 +84,8 @@ def output_text(assignments):
     for (assignee, variables) in sorted(assignments.iteritems()):
         sys.stdout.write('%s = %s\n' % (assignee, ' '.join(sorted(variables))))
 
-def make_graph(database, graph_name, as_text, view):
-    assignments = trim_singles(relations(database))
+def make_graph(database, graph_name, as_text, include_internal, view):
+    assignments = graph_assignments(all_assignments(database), include_internal)
     if as_text:
         output_text(assignments)
     else:
@@ -81,22 +97,23 @@ class TestAssignments(unittest.TestCase):
     def test_immediate(self):
         s = ('A := a\n'
              'B := $(A)\n')
-        self.assertEqual(relations(s.splitlines()),
+        self.assertEqual(all_assignments(s.splitlines()),
                          {'A' : set(),
                           'B' : {'A'}})
 
     def test_deferred(self):
         s = ('A = a\n'
              'B = $(A)\n')
-        self.assertEqual(relations(s.splitlines()),
+        self.assertEqual(all_assignments(s.splitlines()),
                          {'A' : set(),
                           'B' : {'A'}})
 
     def test_empty(self):
-        self.assertEqual(relations('B = $(A)\n'.splitlines()), {'B' : {'A'}})
+        self.assertEqual(all_assignments('B = $(A)\n'.splitlines()),
+                         {'B' : {'A'}})
 
     def test_multiple(self):
-        self.assertEqual(relations('A = $(B)$(C) $(D)\n'.splitlines()),
+        self.assertEqual(all_assignments('A = $(B)$(C) $(D)\n'.splitlines()),
                          {'A' : {'B', 'C', 'D'}})
 
     def test_without_edges(self):
@@ -117,6 +134,8 @@ if __name__ == "__main__":
                                 " standard input stream"))
     parser.add_argument('--graph-name', default = 'graph', dest = 'graph_name',
                         help = ("Graph name; defaults to 'graph'"))
+    parser.add_argument('--include-internal', action = 'store_true',
+                        help = "Include internal and implicit variables")
     parser.add_argument('--list', dest = 'as_text', action = 'store_true',
                         help = "Output as text to the standard output stream")
     parser.add_argument('--no-view', dest = 'view', action = 'store_false',
@@ -124,7 +143,8 @@ if __name__ == "__main__":
 
     args = vars(parser.parse_args())
     database = args['database'] if args['database'] else sys.stdin
-    make_graph(database, args['graph_name'], args['as_text'], args['view'])
+    make_graph(database,args['graph_name'], args['as_text'],
+               args['include_internal'], args['view'])
 
     if database != sys.stdin:
         database.close()
