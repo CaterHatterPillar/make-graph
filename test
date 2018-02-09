@@ -1,0 +1,22 @@
+# Immediate assignments evaluate immediately and don't show up in the database
+IMMEDIATE_1:=4711
+IMMEDIATE_2:=$(IMMEDIATE_1)
+
+# But deferred assignments do
+DEFERRED_1 = 4711
+DEFERRED_2 = $(DEFERRED_1)
+
+ PREFIX_SPACE_1 = 4711
+ PREFIX_SPACE_2 = $(PREFIX_SPACE_1)
+
+# Variables can be references using braces by those of little faith
+BRACES_1 = 4711
+BRACES_2 = ${BRACES_1}
+
+TARGET_SPECIFIC_1 = 4711
+all: TARGET_SPECIFIC_2 = $(TARGET_SPECIFIC_1)
+
+# Nodes without edges are not included in the output
+NO_EDGE = 4711
+
+all: ;
