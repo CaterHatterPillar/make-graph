@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+"""
+Assemble a directed graph visualizing the relationships between GNU
+Make variables using Graphviz.
+
+Synopsis: make --print-data-base | python make_graph.py [options]
+"""
+
 import argparse
 import graphviz
 import re
@@ -126,25 +134,28 @@ def make_graph(database, graph_name, as_text, include_internal, view):
     else:
         output_graph(assignments, graph_name, view)
 
+def parser():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        '--database', type=argparse.FileType('r'), default=sys.stdin,
+        help=("GNU Make database filename; if no filename is provided the"
+              " database is expected on the standard input stream"))
+    parser.add_argument(
+        '--graph-name', default='graph',
+        help=("Graph name; defaults to 'graph'"))
+    parser.add_argument(
+        '--include-internal', action='store_true',
+        help="Include internal and implicit variables")
+    parser.add_argument(
+        '--list', dest='as_text', action='store_true',
+        help="Output as text to the standard output stream")
+    parser.add_argument(
+        '--no-view', dest='view', action='store_false',
+        help="Don't open the assembled graph")
+    return parser
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(__file__)
-    parser.add_argument('--database', type = argparse.FileType('r'),
-                        help = ("GNU Make database filename; if no filename is"
-                                " provided the database is expected on the"
-                                " standard input stream"))
-    parser.add_argument('--graph-name', default = 'graph', dest = 'graph_name',
-                        help = ("Graph name; defaults to 'graph'"))
-    parser.add_argument('--include-internal', action = 'store_true',
-                        help = "Include internal and implicit variables")
-    parser.add_argument('--list', dest = 'as_text', action = 'store_true',
-                        help = "Output as text to the standard output stream")
-    parser.add_argument('--no-view', dest = 'view', action = 'store_false',
-                        help = "Don't open the assembled graph")
-
-    args = vars(parser.parse_args())
-    database = args['database'] if args['database'] else sys.stdin
-    make_graph(database,args['graph_name'], args['as_text'],
-               args['include_internal'], args['view'])
-
-    if database != sys.stdin:
-        database.close()
+    args = parser().parse_args()
+    with args.database:
+        make_graph(args.database, args.graph_name, args.as_text,
+                   args.include_internal, args.view)
