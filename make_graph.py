@@ -18,7 +18,7 @@ def all_assignments(database):
 
     # accept target-specific variables
     re_assignment = re.compile(r'.*?([^:#= ]+) :?= .*$')
-    re_variable = re.compile(r'\$\(([^:#= ]+?)\)')
+    re_variable = re.compile(r'\$[\({]([^:#= ]+?)[\)}]')  # ${V] 'allowed'
     for line in database:
         if not any(assign in line for assign in (' = ', ' := ')):
             continue
