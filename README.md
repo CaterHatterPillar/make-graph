@@ -5,7 +5,7 @@ Make variables using Graphviz.
 
 ## Synopsis
 
-`make --print-data-base | python make_graph.py [options]`
+`make --print-data-base | python make_variable_graph.py [options]`
 
 ## Limitations
 

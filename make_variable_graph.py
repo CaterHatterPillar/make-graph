@@ -3,7 +3,7 @@
 Assemble a directed graph visualizing the relationships between GNU
 Make variables using Graphviz.
 
-Synopsis: make --print-data-base | python make_graph.py [options]
+Synopsis: make --print-data-base | python make_variable_graph.py [options]
 """
 
 import argparse
@@ -127,7 +127,7 @@ def output_text(assignments):
     for (assignee, variables) in sorted(assignments.iteritems()):
         sys.stdout.write('%s = %s\n' % (assignee, ' '.join(sorted(variables))))
 
-def make_graph(database, graph_name, as_text, include_internal, view):
+def make_variable_graph(database, graph_name, as_text, include_internal, view):
     assignments = graph_assignments(all_assignments(database), include_internal)
     if as_text:
         output_text(assignments)
@@ -157,5 +157,5 @@ def parser():
 if __name__ == "__main__":
     args = parser().parse_args()
     with args.database:
-        make_graph(args.database, args.graph_name, args.as_text,
-                   args.include_internal, args.view)
+        make_variable_graph(args.database, args.graph_name, args.as_text,
+                            args.include_internal, args.view)
