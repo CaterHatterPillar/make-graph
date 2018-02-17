@@ -10,7 +10,6 @@ Make variables using Graphviz.
 ## Limitations
 
 * GNU Make expand immediate variables on-sight, so series of immediate assignments are not accurately represented in the graph
-* Single letter variables in assignments are not added to the graph
 
 ## Tips
 
